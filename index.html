@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Galaga Clone: Hungry Baby vs. Broccoli</title>
     <style>
         body {
@@ -12,24 +12,67 @@
             background: #000;
             color: #fff;
             font-family: Arial, sans-serif;
-        }
-        canvas {
-            border: 1px solid white;
-            background: black;
+            margin: 0;
+            touch-action: none; /* Prevent default touch behaviors */
         }
         #score {
             font-size: 24px;
             margin: 10px;
+        }
+        #gameCanvas {
+            border: 1px solid white;
+            background: black;
+            max-width: 100%;
+            height: auto;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background: #444;
+            color: #fff;
+            font-size: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            touch-action: manipulation; /* Optimize for touch */
+            user-select: none;
+        }
+        .control-btn:active {
+            background: #666;
+        }
+        @media (max-width: 600px) {
+            #gameCanvas {
+                width: 100%;
+                height: auto;
+            }
+            .control-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 24px;
+            }
         }
     </style>
 </head>
 <body>
     <div id="score">Score: 0</div>
     <canvas id="gameCanvas" width="600" height="800"></canvas>
+    <div class="controls">
+        <div id="leftBtn" class="control-btn">←</div>
+        <div id="rightBtn" class="control-btn">→</div>
+    </div>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreDisplay = document.getElementById('score');
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
 
         // Load Images (optional)
         const babyImg = new Image();
@@ -56,17 +99,53 @@
         let gameOver = false;
         let enemySpeed = 1.5;
         let enemyDirection = 1;
+        let lastShotTime = 0;
+        const shotDelay = 300; // 0.3 seconds between shots
 
-        // Controls
+        // Controls (Keyboard)
         let keys = { ArrowLeft: false, ArrowRight: false, Space: false };
         document.addEventListener('keydown', (e) => {
             if (e.code in keys) keys[e.code] = true;
             if (e.code === 'Space' && !gameOver) {
-                bullets.push({ x: player.x + player.width / 2, y: player.y, speed: 8 });
+                const now = Date.now();
+                if (now - lastShotTime >= shotDelay) {
+                    bullets.push({ x: player.x + player.width / 2, y: player.y, speed: 8 });
+                    lastShotTime = now;
+                }
             }
         });
         document.addEventListener('keyup', (e) => {
             if (e.code in keys) keys[e.code] = false;
+        });
+
+        // Touch Controls (Move)
+        let touchLeft = false;
+        let touchRight = false;
+        leftBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchLeft = true;
+        });
+        leftBtn.addEventListener('touchend', () => {
+            touchLeft = false;
+        });
+        rightBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchRight = true;
+        });
+        rightBtn.addEventListener('touchend', () => {
+            touchRight = false;
+        });
+
+        // Touch to Fire
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!gameOver) {
+                const now = Date.now();
+                if (now - lastShotTime >= shotDelay) {
+                    bullets.push({ x: player.x + player.width / 2, y: player.y, speed: 8 });
+                    lastShotTime = now;
+                }
+            }
         });
 
         // Initialize Enemies (3x5 grid)
@@ -98,9 +177,9 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Move Player
-            if (keys.ArrowLeft && player.x > 0) player.x -= player.speed;
-            if (keys.ArrowRight && player.x < canvas.width - player.width) player.x += player.speed;
+            // Move Player (Keyboard or Touch)
+            if ((keys.ArrowLeft || touchLeft) && player.x > 0) player.x -= player.speed;
+            if ((keys.ArrowRight || touchRight) && player.x < canvas.width - player.width) player.x += player.speed;
 
             // Draw Player
             if (babyImg.complete && babyImg.naturalWidth > 0) {
@@ -135,7 +214,7 @@
             enemies.forEach(enemy => {
                 if (!enemy.alive) return;
                 if (broccoliImg.complete && broccoliImg.naturalWidth > 0) {
-                    ctx.drawImage(broccoliImg, enemy.x, enemy.y, enemy.width, enemy.height);
+                    ctx.drawImage(broccoliImg, worker.x, enemy.y, enemy.width, enemy.height);
                 } else {
                     ctx.fillStyle = 'green';
                     ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
@@ -170,7 +249,7 @@
                             y: enemy.y,
                             width: 50,
                             height: 50,
-                            timer: 60 // ~1 second at 60 FPS
+                            timer: 60
                         });
                     }
                 });
@@ -197,7 +276,6 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Start game (no delay for image loading)
         gameLoop();
     </script>
 </body>
