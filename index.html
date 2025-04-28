@@ -94,11 +94,11 @@
 
         // Player
         let player = {
-            x: 270,
-            y: 720,
-            width: 60,
-            height: 60,
-            speed: 6
+            x: 240,
+            y: 680,
+            width: 120,
+            height: 120,
+            speed: 8
         };
 
         // Bullets, Enemies, and Effects
@@ -109,13 +109,19 @@
         let gameOver = false;
         let enemySpeed = 1.5;
         let enemyDirection = 1;
+        let lastShotTime = 0;
+        const shotDelay = 300; // 0.3 seconds between shots
 
         // Controls (Keyboard)
         let keys = { ArrowLeft: false, ArrowRight: false, Space: false };
         document.addEventListener('keydown', (e) => {
             if (e.code in keys) keys[e.code] = true;
             if (e.code === 'Space' && !gameOver) {
-                bullets.push({ x: player.x + player.width / 2, y: player.y, speed: 8 });
+                const now = Date.now();
+                if (now - lastShotTime >= shotDelay) {
+                    bullets.push({ x: player.x + player.width / 2, y: player.y, speed: 8 });
+                    lastShotTime = now;
+                }
             }
         });
         document.addEventListener('keyup', (e) => {
@@ -156,21 +162,25 @@
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (!gameOver) {
-                bullets.push({ x: player.x + player.width / 2, y: player.y, speed: 8 });
-                console.log('Canvas touched, firing bullet');
+                const now = Date.now();
+                if (now - lastShotTime >= shotDelay) {
+                    bullets.push({ x: player.x + player.width / 2, y: player.y, speed: 8 });
+                    lastShotTime = now;
+                    console.log('Canvas touched, firing bullet');
+                }
             }
         });
 
-        // Initialize Enemies (3x5 grid)
+        // Initialize Enemies (2x3 grid)
         function initEnemies() {
             enemies = [];
-            for (let row = 0; row < 3; row++) {
-                for (let col = 0; col < 5; col++) {
+            for (let row = 0; row < 2; row++) {
+                for (let col = 0; col < 3; col++) {
                     enemies.push({
-                        x: 80 + col * 90,
-                        y: 80 + row * 70,
-                        width: 50,
-                        height: 50,
+                        x: 120 + col * 120,
+                        y: 100 + row * 100,
+                        width: 80,
+                        height: 80,
                         alive: true
                     });
                 }
@@ -220,7 +230,7 @@
             if (edgeHit) {
                 enemyDirection *= -1;
                 enemies.forEach(enemy => {
-                    if (enemy.alive) enemy.y += 30;
+                    if (enemy.alive) enemy.y += 40;
                 });
             }
 
@@ -260,9 +270,9 @@
                         effects.push({
                             x: enemy.x,
                             y: enemy.y,
-                            width: 50,
-                            height: 50,
-                            timer: 60
+                            width: 80,
+                            height: 80,
+                            timer: 60 // ~1 second at 60 FPS
                         });
                     }
                 });
